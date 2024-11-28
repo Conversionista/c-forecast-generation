@@ -1,6 +1,6 @@
 config {
     type: "view", 
-    schema: "c-forecast-generation",
+    schema: "c_forecast_dev",
     name: "forecast_se_people",
     tags: ['Sweden']
 }
