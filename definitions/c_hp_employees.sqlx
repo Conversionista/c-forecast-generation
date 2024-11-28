@@ -1,0 +1,29 @@
+config {
+    type: "table",
+    schema: "c_forecast_dev",
+    name: "c_hp_employees",
+    tags: ['Sweden', 'Norway']
+}
+
+SELECT
+  name,
+  employee_id,
+  country,
+  absence,
+  absence_from,
+  specialty,
+  employment_type,
+  location,
+  track,
+  level,
+  seniority,
+  title,
+  date_of_hiring,
+  date_of_termination,
+  employment_status
+FROM
+  ${ref("happy_people")}
+WHERE
+  company LIKE '%Conversionista%'
+  AND (date_of_termination > CURRENT_DATE()
+    OR date_of_termination IS NULL)
