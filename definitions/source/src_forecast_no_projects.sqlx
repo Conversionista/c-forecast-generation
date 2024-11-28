@@ -1,0 +1,8 @@
+config {
+    type: "view", 
+    schema: "c-forecast-generation",
+    name: "forecast_no_projects",
+    tags: ['Norway']
+}
+
+SELECT * FROM eidra-data-platform.src_forecast_no.projects

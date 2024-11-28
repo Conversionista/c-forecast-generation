@@ -1,0 +1,8 @@
+config {
+    type: "view", 
+    schema: "c-forecast-generation",
+    name: "happy_people",
+    tags: ['Sweden']
+}
+
+SELECT * FROM eidra-data-platform.stg_happy_people.employees

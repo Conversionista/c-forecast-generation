@@ -1,0 +1,8 @@
+config {
+    type: "view", 
+    schema: "c-forecast-generation",
+    name: "forecast_no_assignments",
+    tags: ['Norway']
+}
+
+SELECT * FROM eidra-data-portal.src_forecast_no.assignments_snapshot

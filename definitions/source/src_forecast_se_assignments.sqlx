@@ -1,0 +1,8 @@
+config {
+    type: "view", 
+    schema: "c-forecast-generation",
+    name: "forecast_se_assignments",
+    tags: ['Sweden']
+}
+
+SELECT * FROM eidra-data-platform.src_forecast_se.assignments_snapshot
