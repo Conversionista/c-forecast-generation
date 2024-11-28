@@ -5,4 +5,4 @@ config {
     tags: ['Norway']
 }
 
-SELECT * FROM eidra-data-portal.src_forecast_no.assignments_snapshot
+SELECT * FROM eidra-data-platform.src_forecast_no.assignments_snapshot
