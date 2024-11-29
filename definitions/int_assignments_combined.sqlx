@@ -1,7 +1,58 @@
 config {
     type: "table",
     schema: "c_forecast_dev",
-    name: "assignemnts_combined",
+    name: "assignments_combined_filtered",
     tags: ['Sweden', 'Norway']
 }
 
+SELECT 
+    combined_data.id,
+    combined_data.start_date,
+    combined_data.end_date,
+    combined_data.allocation,
+    combined_data.notes,
+    combined_data.updated_at,
+    combined_data.updated_by_id,
+    combined_data.project_id,
+    combined_data.person_id,
+    combined_data.placeholder_id,
+    combined_data.repeated_assignment_set_id,
+    combined_data.active_on_days_off
+FROM (
+    SELECT 
+        id,
+        start_date,
+        end_date,
+        allocation,
+        notes,
+        updated_at,
+        updated_by_id,
+        project_id,
+        person_id,
+        CAST(placeholder_id AS STRING) AS placeholder_id,
+        CAST(repeated_assignment_set_id AS STRING) AS repeated_assignment_set_id,
+        active_on_days_off
+    FROM ${ref("forecast_se_assignments")}
+
+    UNION ALL
+
+    SELECT 
+        id AS forecast_person_id,
+        start_date,
+        end_date,
+        allocation,
+        notes,
+        updated_at,
+        updated_by_id,
+        project_id,
+        person_id,
+        CAST(placeholder_id AS STRING) AS placeholder_id,
+        CAST(repeated_assignment_set_id AS STRING) AS repeated_assignment_set_id,
+        active_on_days_off
+    FROM ${ref("forecast_no_assignments")}
+) AS combined_data
+WHERE EXISTS (
+    SELECT 1
+    FROM ${ref("people_combined")} AS active_users
+    WHERE active_users.forecast_person_id = combined_data.person_id
+)
