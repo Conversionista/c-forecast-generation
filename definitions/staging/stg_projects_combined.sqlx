@@ -1,0 +1,29 @@
+config {
+    type: "table",
+    schema: "c_forecast_dev",
+    name: "projects_combined_filtered",
+    tags: ['Sweden', 'Norway']
+}
+
+WITH combined_projects AS (
+    SELECT *
+    FROM ${ref("forecast_se_projects")}
+
+    UNION ALL
+
+    SELECT *
+    FROM ${ref("forecast_no_projects")}
+)
+
+SELECT p.*
+FROM combined_projects AS p
+WHERE EXISTS (
+    SELECT 1
+    FROM ${ref("forecast_se_assignments")} AS se_a
+    WHERE se_a.project_id = p.id
+)
+OR EXISTS (
+    SELECT 1
+    FROM ${ref("forecast_no_assignments")} AS no_a
+    WHERE no_a.project_id = p.id
+)
