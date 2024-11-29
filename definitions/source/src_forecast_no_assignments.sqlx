@@ -6,3 +6,4 @@ config {
 }
 
 SELECT * FROM eidra-data-platform.src_forecast_no.assignments_snapshot
+

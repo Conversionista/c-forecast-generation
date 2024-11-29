@@ -27,3 +27,4 @@ WHERE
   company LIKE '%Conversionista%'
   AND (date_of_termination > CURRENT_DATE()
     OR date_of_termination IS NULL)
+  AND country IN ('Sweden', 'Norway')

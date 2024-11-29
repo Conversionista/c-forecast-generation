@@ -8,8 +8,7 @@ config {
 
 SELECT
   id,
-  first_name,
-  last_name,
+  CONCAT(first_name, ' ', last_name) AS name,
   email,
   roles,
   harvest_user_id,
@@ -31,8 +30,7 @@ UNION ALL
 
 SELECT
   id,
-  first_name,
-  last_name,
+  CONCAT(first_name, ' ', last_name) AS name,
   email,
   roles,
   harvest_user_id,
@@ -49,3 +47,4 @@ FROM
 WHERE
   email LIKE '%conversionista%'
   AND roles LIKE '%Conversionista%'
+  AND last_name LIKE '%Yassiin%'

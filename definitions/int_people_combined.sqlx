@@ -1,0 +1,14 @@
+config {
+    type: "table",
+    schema: "c_forecast_dev",
+    name: "test_name",
+    tags: ['Sweden', 'Norway']
+}
+
+SELECT b.name as name_for,
+       a.name as name_c,
+       a.employment_status
+FROM ${ref("c_hp_employees")} AS a
+LEFT JOIN ${ref("c_forecast_employees")} AS b
+ON a.name = b.name
+/* ON a.employee_id = b.c_emp_id
