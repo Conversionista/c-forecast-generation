@@ -48,3 +48,4 @@ WHERE
   email LIKE '%conversionista%'
   AND roles LIKE '%Conversionista%'
   AND last_name LIKE '%Yassiin%'
+  ORDER BY (name)

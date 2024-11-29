@@ -1,0 +1,7 @@
+config {
+    type: "table",
+    schema: "c_forecast_dev",
+    name: "assignemnts_combined",
+    tags: ['Sweden', 'Norway']
+}
+

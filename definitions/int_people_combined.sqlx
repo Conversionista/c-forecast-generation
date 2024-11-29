@@ -1,14 +1,26 @@
 config {
     type: "table",
     schema: "c_forecast_dev",
-    name: "test_name",
+    name: "people_combined",
     tags: ['Sweden', 'Norway']
 }
 
-SELECT b.name as name_for,
-       a.name as name_c,
-       a.employment_status
+SELECT a.name,
+       b.harvest_user_id,
+       a.employee_id,
+       a.country, 
+       a.location, 
+       a.specialty,
+       a.seniority,
+       a.date_of_hiring,
+       a.date_of_termination,
+       b.weekly_capacity,
+       b.working_days_monday,
+       b.working_days_tuesday,
+       b.working_days_wednesday,
+       b.working_days_thursday,
+       b.working_days_friday
 FROM ${ref("c_hp_employees")} AS a
 LEFT JOIN ${ref("c_forecast_employees")} AS b
-ON a.name = b.name
-/* ON a.employee_id = b.c_emp_id
+ON a.employee_id = b.c_emp_id
+ORDER BY (a.name)
