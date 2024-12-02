@@ -28,8 +28,7 @@ FROM
 
 
 WHERE TRUE
-  /* Logic to handle that the Forecast API only supports 180 day intervalls – this will get the whole full month before 180 days from now. */
-  AND (date BETWEEN DATE_TRUNC(CURRENT_DATE(), MONTH) AND DATE_ADD(LAST_DAY(DATE_ADD(CURRENT_DATE(), INTERVAL 180 DAY), MONTH), INTERVAL -1 MONTH))
+  AND date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR)
 
 GROUP BY
   date
