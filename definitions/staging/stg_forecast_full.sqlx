@@ -5,8 +5,7 @@ config {
     tags: ['Sweden', 'Norway']
 }
 
-WITH
-  Time AS (
+WITH Assignments AS (
   SELECT
     id,
     CAST(start_date AS DATE) AS start_date,
@@ -15,68 +14,57 @@ WITH
     project_id,
     person_id,
     updated_at
-  FROM
-    ${ref("assignments_combined_filtered")} ),
-  Projects AS (
+  FROM ${ref("assignments_combined_filtered")}
+),
+ProjectDetails AS (
   SELECT
     t1.*,
     COALESCE(t2.name, t3.name) AS client,
     COALESCE(t2.harvest_id, t3.harvest_id) AS harvest_client_id
-  FROM
-    ${ref("projects_combined_filtered")} AS t1
-  LEFT JOIN
-    ${ref("forecast_se_clients")} AS t2
-  ON
-    CAST(t1.client_id AS STRING) = CAST(t2.id AS STRING)
-  LEFT JOIN
-    ${ref("forecast_no_clients")} AS t3
-  ON
-    CAST(t1.client_id AS STRING) = CAST(t3.id AS STRING) ),
-  People AS (
-  SELECT
-    *
-  FROM
-    ${ref("people_combined")} )
-    
+  FROM ${ref("projects_combined_filtered")} AS t1
+  LEFT JOIN ${ref("forecast_se_clients")} AS t2
+    ON CAST(t1.client_id AS STRING) = CAST(t2.id AS STRING)
+  LEFT JOIN ${ref("forecast_no_clients")} AS t3
+    ON CAST(t1.client_id AS STRING) = CAST(t3.id AS STRING)
+),
+EmployeeInfo AS (
+  SELECT *
+  FROM ${ref("people_combined")}
+)
+
 SELECT
-  t1.id AS task_id,
-  t1.start_date,
-  t1.end_date,
-  (t1.allocation/3600) AS hours_per_day,
+  a.id AS task_id,
+  a.start_date,
+  a.end_date,
+  (a.allocation/3600) AS hours_per_day,
   (CASE
-      WHEN DATE_DIFF(t1.end_date, t1.start_date, WEEK) > 0 THEN DATE_DIFF(t1.end_date, t1.start_date, day) - (DATE_DIFF(t1.end_date, t1.start_date, week) * 2) +1
-      ELSE DATE_DIFF(t1.end_date, t1.start_date, day) +1
-  END
-    )*(t1.allocation/3600) AS total_hours,
-  t1.updated_at,
-  t2.name,
-  t2.employee_id,
-  t2.country,
-  t2.company,
-  t2.level, 
-  t2.location,
-  t2.track,
-  t2.specialty,
-  t2.seniority,
-  t3.client,
-  t3.name AS project_name,
-  t3.code AS project_code,
-  LEFT(t3.code,4) AS client_id,
-  t3.color,
-  t3.start_date AS project_start_date,
-  t3.end_date AS project_end_date,
-  t3.archived,
+      WHEN DATE_DIFF(a.end_date, a.start_date, WEEK) > 0 THEN DATE_DIFF(a.end_date, a.start_date, DAY) - (DATE_DIFF(a.end_date, a.start_date, WEEK) * 2) + 1
+      ELSE DATE_DIFF(a.end_date, a.start_date, DAY) + 1
+  END) * (a.allocation/3600) AS total_hours,
+  a.updated_at,
+  e.name,
+  e.employee_id,
+  e.country,
+  e.company,
+  e.level, 
+  e.location,
+  e.track,
+  e.specialty,
+  e.seniority,
+  p.client,
+  p.name AS project_name,
+  p.code AS project_code,
+  LEFT(p.code, 4) AS client_id,
+  p.color,
+  p.start_date AS project_start_date,
+  p.end_date AS project_end_date,
+  p.archived,
   CASE
-    WHEN t1.start_date <= CURRENT_DATE() AND t1.end_date > CURRENT_DATE() THEN "Yes"
+    WHEN a.start_date <= CURRENT_DATE() AND a.end_date > CURRENT_DATE() THEN "Yes"
     ELSE "No"
   END AS active
-FROM
-  Time AS t1
-LEFT JOIN
-  People AS t2
-ON
-  t1.person_id = t2.forecast_person_id
-LEFT JOIN
-  Projects AS t3
-ON
-  t1.project_id = t3.id
+FROM Assignments AS a
+LEFT JOIN EmployeeInfo AS e
+  ON a.person_id = e.forecast_person_id
+LEFT JOIN ProjectDetails AS p
+  ON a.project_id = p.id

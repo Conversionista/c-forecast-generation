@@ -24,7 +24,7 @@ FROM
   ${ref("forecast_se_people")}
 WHERE
   email LIKE '%conversionista%'
-  AND roles LIKE '%Conversionista%'
+  OR roles LIKE '%Conversionista%'
 
 UNION ALL
 
