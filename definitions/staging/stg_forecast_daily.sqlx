@@ -32,40 +32,31 @@ dates AS (
 ), 
 harvest_forecast AS (
   SELECT 
-    *,
-    "1" AS merge_id 
-  FROM (
-    SELECT
-      task_id,
-      CASE
-        WHEN project_name = "Time Off" THEN 8
-        ELSE hours_per_day
-      END AS hours_per_day,
-      updated_at,
-      name,
-      employee_id,
-      company,
-      country,
-      track,
-      level,
-      seniority,
-      client,
-      project_name,
-      project_code,
-      client_id,
-      color,
-      project_start_date,
-      project_end_date,
-      start_date,
-      end_date,
-      archived
-    FROM ${ref("int_harvest_forecast")} 
-    GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19
-  )
+    hf.*,
+    "1" AS merge_id,
+    p.working_days_monday,
+    p.working_days_tuesday,
+    p.working_days_wednesday,
+    p.working_days_thursday,
+    p.working_days_friday,
+    ROW_NUMBER() OVER (PARTITION BY hf.task_id ORDER BY hf.updated_at DESC) as rn
+  FROM ${ref("int_harvest_forecast")} hf
+  LEFT JOIN ${ref("people_combined")} p ON hf.employee_id = p.employee_id
 )
 
-SELECT t1.date, t2.* EXCEPT(merge_id)
+SELECT 
+  t1.date, 
+  t2.* EXCEPT(merge_id, working_days_monday, working_days_tuesday, working_days_wednesday, working_days_thursday, working_days_friday, rn, hours_per_day),
+  CASE
+    WHEN t2.project_name = "Time Off" THEN t2.hours_per_day
+    WHEN EXTRACT(DAYOFWEEK FROM t1.date) = 2 AND t2.working_days_monday THEN t2.hours_per_day
+    WHEN EXTRACT(DAYOFWEEK FROM t1.date) = 3 AND t2.working_days_tuesday THEN t2.hours_per_day
+    WHEN EXTRACT(DAYOFWEEK FROM t1.date) = 4 AND t2.working_days_wednesday THEN t2.hours_per_day
+    WHEN EXTRACT(DAYOFWEEK FROM t1.date) = 5 AND t2.working_days_thursday THEN t2.hours_per_day
+    WHEN EXTRACT(DAYOFWEEK FROM t1.date) = 6 AND t2.working_days_friday THEN t2.hours_per_day
+    ELSE 0
+  END AS hours_per_day
 FROM dates t1
-LEFT JOIN harvest_forecast AS t2 USING(merge_id)
+LEFT JOIN harvest_forecast AS t2 ON t2.merge_id = t1.merge_id AND t2.rn = 1
 WHERE t1.date BETWEEN t2.start_date AND t2.end_date
 ORDER BY task_id, t1.date ASC
