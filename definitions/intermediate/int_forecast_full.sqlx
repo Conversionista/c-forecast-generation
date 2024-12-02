@@ -36,6 +36,7 @@ WITH
     *
   FROM
     ${ref("people_combined")} )
+    
 SELECT
   t1.id AS task_id,
   t1.start_date,
