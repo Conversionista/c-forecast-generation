@@ -1,5 +1,5 @@
 config {
-    type: "table",
+    type: "view",
     schema: "c_forecast_dev",
     name: "int_forecast_per_day"
 }
@@ -25,10 +25,14 @@ workdays AS (
     IF(ph.name IS NOT NULL, TRUE, FALSE) AS public_holiday
   FROM
     UNNEST(
-      GENERATE_DATE_ARRAY('2023-01-01', LAST_DAY((DATE_ADD(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL 180 DAY)), YEAR), INTERVAL 1 DAY)
+      GENERATE_DATE_ARRAY(
+        (SELECT MIN(date) FROM ${ref("int_forecast_daily")}),
+        DATE_ADD(CURRENT_DATE(), INTERVAL 6 MONTH),
+        INTERVAL 1 DAY
+      )
     ) AS date
   LEFT JOIN
-    `conversionista-se.sold_and_forecast.public_holidays` AS ph
+    ${ref("public_holidays")} AS ph
   ON
     date = ph.date
   WHERE
@@ -44,7 +48,7 @@ forecast_agg AS (
     ROUND(SUM(IF(color = 'black', hours_per_day, 0)), 1) AS timeoff_hours,
     ROUND(SUM(IF(color NOT IN ('black', 'orange', 'blue'), hours_per_day, 0)), 1) AS other_hours
   FROM
-    `conversionista-se.c_forecast_dev.int_forecast_daily`
+    ${ref("int_forecast_daily")} 
   WHERE
     employee_id NOT IN (SELECT id FROM employees_to_exclude)
   GROUP BY
@@ -61,7 +65,7 @@ canvas AS (
     w.date,
     IF(w.public_holiday, 8, NULL) AS public_holiday_hours
   FROM
-    `conversionista-se.c_forecast_dev.people_combined` e
+    ${ref("people_combined")} e
   CROSS JOIN
     workdays w
   WHERE
@@ -88,5 +92,7 @@ LEFT JOIN
   forecast_agg f
 ON
   c.employee_id = f.employee_id AND c.date = f.date
+WHERE
+  c.date <= DATE_ADD(CURRENT_DATE(), INTERVAL 3 MONTH)
 ORDER BY
   c.date, c.name
