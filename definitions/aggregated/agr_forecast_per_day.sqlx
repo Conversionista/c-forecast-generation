@@ -27,7 +27,7 @@ workdays AS (
   FROM
     UNNEST(
       GENERATE_DATE_ARRAY(
-        (SELECT MIN(date) FROM ${ref("int_forecast_daily")}),
+        (SELECT MIN(date) FROM ${ref("stg_forecast_daily")}),
         DATE_ADD(CURRENT_DATE(), INTERVAL 6 MONTH),
         INTERVAL 1 DAY
       )
@@ -49,7 +49,7 @@ forecast_agg AS (
     ROUND(SUM(IF(color = 'black', hours_per_day, 0)), 1) AS timeoff_hours,
     ROUND(SUM(IF(color NOT IN ('black', 'orange', 'blue'), hours_per_day, 0)), 1) AS other_hours
   FROM
-    ${ref("int_forecast_daily")} 
+    ${ref("stg_forecast_daily")} 
   WHERE
     employee_id NOT IN (SELECT id FROM employees_to_exclude)
   GROUP BY
@@ -66,7 +66,7 @@ canvas AS (
     w.date,
     IF(w.public_holiday, 8, NULL) AS public_holiday_hours
   FROM
-    ${ref("people_combined")} e
+    ${ref("stg_people_combined")} e
   CROSS JOIN
     workdays w
   WHERE

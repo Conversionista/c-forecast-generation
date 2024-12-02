@@ -1,7 +1,7 @@
 config {
     type: "table",
     schema: "c_forecast_dev",
-    name: "int_forecast_daily",
+    name: "stg_forecast_daily",
     tags: ['Sweden', 'Norway']
 }
 
@@ -40,8 +40,8 @@ harvest_forecast AS (
     p.working_days_thursday,
     p.working_days_friday,
     ROW_NUMBER() OVER (PARTITION BY hf.task_id ORDER BY hf.updated_at DESC) as rn
-  FROM ${ref("int_harvest_forecast")} hf
-  LEFT JOIN ${ref("people_combined")} p ON hf.employee_id = p.employee_id
+  FROM ${ref("stg_harvest_forecast")} hf
+  LEFT JOIN ${ref("stg_people_combined")} p ON hf.employee_id = p.employee_id
 )
 
 SELECT 

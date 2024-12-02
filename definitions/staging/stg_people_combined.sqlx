@@ -1,7 +1,7 @@
 config {
     type: "table",
     schema: "c_forecast_dev",
-    name: "people_combined",
+    name: "stg_people_combined",
     tags: ['Sweden', 'Norway']
 }
 

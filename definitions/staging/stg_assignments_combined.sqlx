@@ -1,7 +1,7 @@
 config {
     type: "table",
     schema: "c_forecast_dev",
-    name: "assignments_combined_filtered",
+    name: "stg_assignments_combined_filtered",
     tags: ['Sweden', 'Norway']
 }
 
@@ -53,6 +53,6 @@ FROM (
 ) AS combined_data
 WHERE EXISTS (
     SELECT 1
-    FROM ${ref("people_combined")} AS active_users
+    FROM ${ref("stg_people_combined")} AS active_users
     WHERE active_users.forecast_person_id = combined_data.person_id
 )
