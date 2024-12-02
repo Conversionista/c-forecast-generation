@@ -1,7 +1,8 @@
 config {
     type: "table",
     schema: "c_forecast_dev",
-    name: "int_harvest_forecast"
+    name: "int_harvest_forecast",
+    tags: ['Sweden', 'Norway']
 }
 
 WITH

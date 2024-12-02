@@ -1,7 +1,8 @@
 config {
     type: "view",
     schema: "c_forecast_dev",
-    name: "int_forecast_per_day"
+    name: "int_forecast_per_day",
+    tags: ['Sweden', 'Norway']
 }
 
 js {

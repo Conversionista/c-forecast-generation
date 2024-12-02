@@ -1,7 +1,8 @@
 config {
     type: "view",
     schema: "c_forecast_dev",
-    name: "int_forecast_per_week"
+    name: "int_forecast_per_month",
+    tags: ['Sweden', 'Norway']
 }
 
 SELECT
@@ -14,14 +15,13 @@ SELECT
   , location
   , specialty
   , seniority
-  , SUM(public_holiday_hours) AS public_holiday_hours
-  , SUM(timeoff_hours) AS timeoff_hours
-  , SUM(client_hours) AS client_hours
-  , SUM(internal_hours) AS internal_hours
-  , SUM(other_hours) AS other_hours
-  , SUM(available_hours) AS available_hours
-  , ROUND(SUM(capacity_hours), 2) AS capacity_hours
-
+  , ROUND(SUM(public_holiday_hours), 1) AS public_holiday_hours
+  ,ROUND(SUM(timeoff_hours), 1) AS timeoff_hours
+  ,ROUND(SUM(client_hours), 1) AS client_hours
+  ,ROUND(SUM(internal_hours), 1) AS internal_hours
+  ,ROUND(SUM(other_hours), 1) AS other_hours
+  ,ROUND(SUM(available_hours), 1) AS available_hours
+  ,ROUND(SUM(capacity_hours), 1) AS capacity_hours
 
 FROM
   ${ref("int_forecast_per_day")}

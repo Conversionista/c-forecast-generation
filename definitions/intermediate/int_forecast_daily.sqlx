@@ -1,7 +1,8 @@
 config {
     type: "table",
     schema: "c_forecast_dev",
-    name: "int_forecast_daily"
+    name: "int_forecast_daily",
+    tags: ['Sweden', 'Norway']
 }
 
 js {
@@ -44,6 +45,7 @@ harvest_forecast AS (
       name,
       employee_id,
       company,
+      country,
       track,
       level,
       seniority,
