@@ -5,26 +5,97 @@ config {
     tags: ['Sweden', 'Norway']
 }
 
-SELECT a.name,
-       b.harvest_user_id,
-       b.id as forecast_person_id,
-       a.employee_id,
-       a.company,
-       a.country, 
-       a.location, 
-       a.specialty,
-       a.track,
-       a.seniority,
-       a.level, 
-       a.date_of_hiring,
-       a.date_of_termination,
-       b.weekly_capacity,
-       b.working_days_monday,
-       b.working_days_tuesday,
-       b.working_days_wednesday,
-       b.working_days_thursday,
-       b.working_days_friday
-FROM ${ref("c_hp_employees")} AS a
-LEFT JOIN ${ref("c_forecast_employees")} AS b
-ON a.employee_id = b.c_emp_id
-ORDER BY (a.name)
+WITH forecast_employees AS (
+    SELECT
+        id,
+        CONCAT(first_name, ' ', last_name) AS name,
+        email,
+        roles,
+        harvest_user_id,
+        weekly_capacity,
+        working_days_monday,
+        working_days_tuesday,
+        working_days_wednesday,
+        working_days_thursday,
+        working_days_friday,
+        REGEXP_EXTRACT(roles, r'(?i)emp(?:id)?(\d+)') AS c_emp_id
+    FROM
+        ${ref("forecast_se_people")}
+    WHERE
+        email LIKE '%conversionista%'
+        OR roles LIKE '%Conversionista%'
+
+    UNION ALL
+
+    SELECT
+        id,
+        CONCAT(first_name, ' ', last_name) AS name,
+        email,
+        roles,
+        harvest_user_id,
+        weekly_capacity,
+        working_days_monday,
+        working_days_tuesday,
+        working_days_wednesday,
+        working_days_thursday,
+        working_days_friday,
+        REGEXP_EXTRACT(roles, r'(?i)emp(?:id)?(\d+)') AS c_emp_id
+    FROM
+        ${ref("forecast_no_people")}
+    WHERE
+        email LIKE '%conversionista%'
+        AND roles LIKE '%Conversionista%'
+        AND last_name LIKE '%Yassiin%'
+),
+
+happy_people AS (
+    SELECT
+        name,
+        employee_id,
+        country,
+        company,
+        absence,
+        absence_from,
+        specialty,
+        employment_type,
+        location,
+        track,
+        level,
+        seniority,
+        title,
+        date_of_hiring,
+        date_of_termination,
+        employment_status
+    FROM
+        ${ref("happy_people")}
+    WHERE
+        company LIKE '%Conversionista%'
+        AND (date_of_termination > CURRENT_DATE()
+            OR date_of_termination IS NULL)
+        AND country IN ('Sweden', 'Norway')
+)
+
+SELECT 
+    hp.name,
+    fe.harvest_user_id,
+    fe.id as forecast_person_id,
+    hp.employee_id,
+    hp.company,
+    hp.country, 
+    hp.location, 
+    hp.specialty,
+    hp.track,
+    hp.seniority,
+    hp.level, 
+    hp.date_of_hiring,
+    hp.date_of_termination,
+    fe.weekly_capacity,
+    fe.working_days_monday,
+    fe.working_days_tuesday,
+    fe.working_days_wednesday,
+    fe.working_days_thursday,
+    fe.working_days_friday
+FROM happy_people AS hp
+LEFT JOIN forecast_employees AS fe
+ON hp.employee_id = fe.c_emp_id
+ORDER BY hp.name
