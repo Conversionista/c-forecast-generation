@@ -9,6 +9,7 @@ SELECT
   name,
   employee_id,
   country,
+  company,
   absence,
   absence_from,
   specialty,

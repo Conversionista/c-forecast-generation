@@ -3,3 +3,7 @@ defaultLocation: EU
 defaultDataset: c_forecast_dev
 defaultAssertionDataset: dataform_assertions
 dataformCoreVersion: 3.0.0
+
+vars:
+  yearly_holidays: '["01-01","01-06","05-01","06-01","12-24","12-25","12-26","12-31"]'
+  specific_holidays: '["2022-04-15","2022-04-18","2022-05-26","2022-06-24","2023-04-07","2023-04-10","2023-05-18","2023-06-23"]'
