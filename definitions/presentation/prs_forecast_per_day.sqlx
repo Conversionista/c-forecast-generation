@@ -85,7 +85,7 @@ SELECT
   COALESCE(f.internal_hours, 0) AS internal_hours,
   COALESCE(f.other_hours, 0) AS other_hours,
   (8 - COALESCE(c.public_holiday_hours, f.timeoff_hours, 0)) AS available_hours,
-  (8 - COALESCE(c.public_holiday_hours, f.timeoff_hours, 0) - COALESCE(f.client_hours, 0)) AS capacity_hours
+  ROUND((8 - COALESCE(c.public_holiday_hours, f.timeoff_hours, 0) - COALESCE(f.client_hours, 0)),2) AS capacity_hours
 FROM
   canvas c
 LEFT JOIN

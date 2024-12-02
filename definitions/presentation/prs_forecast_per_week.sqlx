@@ -1,0 +1,45 @@
+config {
+    type: "view",
+    schema: "c_forecast_dev",
+    name: "int_forecast_per_week"
+}
+
+SELECT
+  DATE_TRUNC(date, MONTH) AS date
+  , EXTRACT(YEAR FROM date) AS year
+  , EXTRACT(MONTH FROM date) AS month
+  , CONCAT(EXTRACT(YEAR FROM date), ".", EXTRACT(MONTH FROM date)) AS year_month
+  , name
+  , employee_id
+  , location
+  , specialty
+  , seniority
+  , SUM(public_holiday_hours) AS public_holiday_hours
+  , SUM(timeoff_hours) AS timeoff_hours
+  , SUM(client_hours) AS client_hours
+  , SUM(internal_hours) AS internal_hours
+  , SUM(other_hours) AS other_hours
+  , SUM(available_hours) AS available_hours
+  , ROUND(SUM(capacity_hours), 2) AS capacity_hours
+
+
+FROM
+  ${ref("int_forecast_per_day")}
+
+
+WHERE TRUE
+  /* Logic to handle that the Forecast API only supports 180 day intervalls – this will get the whole full month before 180 days from now. */
+  AND (date BETWEEN DATE_TRUNC(CURRENT_DATE(), MONTH) AND DATE_ADD(LAST_DAY(DATE_ADD(CURRENT_DATE(), INTERVAL 180 DAY), MONTH), INTERVAL -1 MONTH))
+
+GROUP BY
+  date
+  , year
+  , month
+  , year_month
+  , name
+  , employee_id
+  , location
+  , specialty
+  , seniority
+
+
