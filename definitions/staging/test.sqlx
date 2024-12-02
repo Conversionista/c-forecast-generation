@@ -1,0 +1,34 @@
+config {
+    type: "table",
+    schema: "c_forecast_dev",
+    name: "test_table"
+}
+
+WITH Time as (
+SELECT
+id,
+CAST(start_date as DATE) as start_date,
+CAST(end_date as DATE) as end_date,
+allocation,
+project_id,
+person_id,
+updated_at,
+time_stamp
+FROM ${ref("assignments_combined_filtered")}
+), Projects as(
+SELECT 
+t1.*, 
+t2.name as client,
+t2.harvest_id as harvest_client_id
+FROM ${ref("projects_combined_filtered")} as t1
+LEFT JOIN `curamando-bi.Harvest_API.ARC_Harvest_Forecast_Clients` as t2
+on t1.client_id = CAST(t2.id as string)
+), People as(
+SELECT t1.*, t2.employee_id
+FROM `curamando-bi.Harvest_API.ARC_Harvest_Forecast_People` as t1
+LEFT JOIN `curamando-bi.Harvest.ARC_Harvest_EmployeeID` as t2
+ON CAST(CAST(t1.harvest_user_id as int) as string)= t2.user_id      
+), Everest as(
+SELECT *
+FROM `curamando-bi.HR.ARC_Everest_Employees` 
+)
