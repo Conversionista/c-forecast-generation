@@ -1,0 +1,51 @@
+config {
+    type: "table",
+    schema: "c_forecast_dev",
+    name: "int_forecast_daily"
+}
+
+
+WITH dates as (
+SELECT *
+FROM ${ref("bq_dates")}
+WHERE day_of_week < 6 AND SUBSTR(CAST(date as string),6,5) NOT IN UNNEST(yearly_holidays) AND date NOT IN ('2022-04-15','2022-04-18','2022-05-26','2022-06-24','2023-04-07','2023-04-10','2023-05-18','2023-06-23')
+), 
+harvest_forecast as (
+SELECT 
+*,
+"1" as merge_id 
+FROM(
+    SELECT
+    task_id,
+    CASE
+      WHEN project_name = "Time Off" then 8
+      else hours_per_day
+    END as hours_per_day,
+    updated_at,
+    name,
+    employee_id,
+    company,
+    track,
+    level,
+    seniority,
+    client,
+    project_name,
+    project_code,
+    client_id,
+    color,
+    project_start_date,
+    project_end_date,
+    start_date,
+    end_date,
+    archived
+    FROM ${ref("int_harvest_forecast")}
+    #WHERE active = "Yes"
+    GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19)
+)
+
+SELECT t1.date ,t2.* EXCEPT(merge_id)
+FROM dates t1
+LEFT JOIN harvest_forecast as t2 USING(merge_id)
+WHERE t1.date between t2.start_date AND t2.end_date
+ORDER BY task_id,t1.date ASC
+
