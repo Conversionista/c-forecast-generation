@@ -1,11 +1,13 @@
 config {
     type: "view",
     schema: "c_forecast_dev",
-    name: "forecast_se_people",
+    name: "forecast_se_clients",
     tags: ['Sweden']
 }
 
 SELECT
   *
 FROM
-  eidra-data-platform.src_forecast_se.people
+  eidra-data-platform.src_forecast_se.clients
+
+
