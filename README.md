@@ -62,4 +62,8 @@ The project currently uses a single dataset for all tables:
 
 Additional variables are in workflow_settings.yaml that can be changed if project requires.
 
+## Future Enhancements
 
+- Implement separate datasets for different data layers
+- Additional aggregations for the presentation layer
+- Integration with BI tools for visualization
