@@ -1,0 +1,64 @@
+config {
+    type: "table",
+    schema: "c_forecast_dev",
+    name: "stg_forecast_daily",
+    tags: ['Sweden', 'Norway']
+}
+
+js {
+    const yearly_holidays = dataform.projectConfig.vars.yearly_holidays;
+}
+
+WITH yearly_holidays AS (
+  SELECT holiday FROM UNNEST(${yearly_holidays}) AS holiday
+),
+
+dates AS (
+  SELECT *
+  FROM (
+    SELECT DISTINCT date,
+    CAST(FORMAT_DATE("%u", CAST(date AS DATE)) AS INT64) AS day_of_week,
+    "1" AS merge_id 
+    FROM `bigquery-public-data.utility_eu.date_greg`
+    WHERE date BETWEEN '2020-09-01' AND DATE_ADD(CURRENT_DATE(), INTERVAL 180 DAY)
+    ORDER BY DATE ASC
+  )
+  WHERE day_of_week < 6 
+    AND SUBSTR(CAST(date AS STRING), 6, 5) NOT IN (SELECT holiday FROM yearly_holidays)
+    AND date NOT IN (SELECT date FROM ${ref("public_holidays")}
+                     WHERE is_weekend = True)
+), 
+harvest_forecast AS (
+  SELECT 
+    hf.*,
+    "1" AS merge_id,
+    p.working_days_monday,
+    p.working_days_tuesday,
+    p.working_days_wednesday,
+    p.working_days_thursday,
+    p.working_days_friday,
+    ROW_NUMBER() OVER (PARTITION BY hf.task_id ORDER BY hf.updated_at DESC) as rn
+  FROM ${ref("stg_harvest_forecast")} hf
+  LEFT JOIN ${ref("stg_people_combined")} p ON hf.employee_id = p.employee_id
+)
+
+SELECT 
+  t1.date, 
+  CASE
+    WHEN t1.date IN (SELECT date FROM ${ref("public_holidays")}) THEN TRUE
+    ELSE FALSE
+  END AS is_public_holiday,
+  t2.* EXCEPT(merge_id, working_days_monday, working_days_tuesday, working_days_wednesday, working_days_thursday, working_days_friday, rn, hours_per_day),
+  CASE
+    WHEN t2.project_name = "Time Off" THEN t2.hours_per_day
+    WHEN EXTRACT(DAYOFWEEK FROM t1.date) = 2 AND t2.working_days_monday THEN t2.hours_per_day
+    WHEN EXTRACT(DAYOFWEEK FROM t1.date) = 3 AND t2.working_days_tuesday THEN t2.hours_per_day
+    WHEN EXTRACT(DAYOFWEEK FROM t1.date) = 4 AND t2.working_days_wednesday THEN t2.hours_per_day
+    WHEN EXTRACT(DAYOFWEEK FROM t1.date) = 5 AND t2.working_days_thursday THEN t2.hours_per_day
+    WHEN EXTRACT(DAYOFWEEK FROM t1.date) = 6 AND t2.working_days_friday THEN t2.hours_per_day
+    ELSE 0
+  END AS hours_per_day
+FROM dates t1
+LEFT JOIN harvest_forecast AS t2 ON t2.merge_id = t1.merge_id AND t2.rn = 1
+WHERE t1.date BETWEEN t2.start_date AND t2.end_date
+ORDER BY task_id, t1.date ASC
