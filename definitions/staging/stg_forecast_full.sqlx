@@ -48,6 +48,8 @@ SELECT
   e.company,
   e.level, 
   e.location,
+  e.date_of_hiring,
+  e.date_of_termination,
   e.track,
   e.specialty,
   e.seniority,

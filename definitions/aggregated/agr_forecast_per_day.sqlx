@@ -5,62 +5,69 @@ config {
     tags: ['Sweden', 'Norway']
 }
 
-WITH forecast_agg AS (
+WITH date_range AS (
+  SELECT DISTINCT date
+  FROM ${ref("stg_forecast_daily")}
+  WHERE date >= DATE_ADD(CURRENT_DATE(), INTERVAL 1 WEEK)
+),
+
+employee_dates AS (
+  SELECT 
+    e.employee_id,
+    e.name,
+    e.location,
+    e.company,
+    e.specialty,
+    e.seniority,
+    e.date_of_hiring,
+    e.date_of_termination,
+    d.date
+  FROM ${ref("stg_people_combined")} e
+  CROSS JOIN date_range d
+  WHERE e.employee_id NOT IN (SELECT employee_id FROM ${ref("employees_to_exclude_from_forecast")})
+    AND d.date >= e.date_of_hiring
+    AND (e.date_of_termination IS NULL OR d.date <= e.date_of_termination)
+),
+
+forecast_agg AS (
   SELECT
     date,
     employee_id,
     ROUND(SUM(IF(color = 'blue', hours_per_day, 0)), 1) AS client_hours,
     ROUND(SUM(IF(color = 'orange', hours_per_day, 0)), 1) AS internal_hours,
     ROUND(SUM(IF(color = 'black', hours_per_day, 0)), 1) AS timeoff_hours,
-    ROUND(SUM(IF(color NOT IN ('black', 'orange', 'blue'), hours_per_day, 0)), 1) AS other_hours
+    ROUND(SUM(IF(color NOT IN ('black', 'orange', 'blue'), hours_per_day, 0)), 1) AS other_hours,
+    MAX(is_public_holiday) AS is_public_holiday
   FROM
     ${ref("stg_forecast_daily")} 
   WHERE
     employee_id NOT IN (SELECT employee_id FROM ${ref("employees_to_exclude_from_forecast")})
   GROUP BY
     1, 2
-),
-
-canvas AS (
-  SELECT
-    e.name,
-    e.location,
-    e.company,
-    e.employee_id,
-    e.specialty,
-    e.seniority,
-    f.date,
-    IF(f.is_public_holiday, 8, NULL) AS public_holiday_hours
-  FROM
-    ${ref("stg_people_combined")} e
-  CROSS JOIN
-    ${ref("stg_forecast_daily")} f
-  WHERE
-    e.employee_id NOT IN (SELECT employee_id FROM ${ref("employees_to_exclude_from_forecast")})
 )
 
 SELECT
-  c.date,
-  c.name,
-  c.employee_id,
-  c.location,
-  c.company,
-  c.specialty,
-  c.seniority,
-  ROUND(COALESCE(c.public_holiday_hours, 0), 0) AS public_holiday_hours,
-  COALESCE(f.timeoff_hours, 0) AS timeoff_hours,
-  COALESCE(f.client_hours, 0) AS client_hours,
-  COALESCE(f.internal_hours, 0) AS internal_hours,
-  COALESCE(f.other_hours, 0) AS other_hours,
-  (8 - COALESCE(c.public_holiday_hours, f.timeoff_hours, 0)) AS available_hours,
-  ROUND((8 - COALESCE(c.public_holiday_hours, f.timeoff_hours, 0) - COALESCE(f.client_hours, 0)),2) AS capacity_hours
+  ed.date,
+  ed.name,
+  ed.employee_id,
+  ed.location,
+  ed.company,
+  ed.specialty,
+  ed.seniority,
+  ed.date_of_hiring,
+  ed.date_of_termination,
+  ROUND(IF(COALESCE(fa.is_public_holiday, FALSE), 8, 0), 0) AS public_holiday_hours,
+  COALESCE(fa.timeoff_hours, 0) AS timeoff_hours,
+  COALESCE(fa.client_hours, 0) AS client_hours,
+  COALESCE(fa.internal_hours, 0) AS internal_hours,
+  COALESCE(fa.other_hours, 0) AS other_hours,
+  (8 - IF(COALESCE(fa.is_public_holiday, FALSE), 8, COALESCE(fa.timeoff_hours, 0))) AS available_hours,
+  ROUND((8 - IF(COALESCE(fa.is_public_holiday, FALSE), 8, COALESCE(fa.timeoff_hours, 0)) - COALESCE(fa.client_hours, 0)), 2) AS capacity_hours
 FROM
-  canvas c
+  employee_dates ed
 LEFT JOIN
-  forecast_agg f
+  forecast_agg fa
 ON
-  c.employee_id = f.employee_id AND c.date = f.date
-WHERE
-  c.date <= DATE_ADD(CURRENT_DATE(), INTERVAL 3 MONTH)
+  ed.employee_id = fa.employee_id AND ed.date = fa.date
 ORDER BY
-  c.date, c.name
+  ed.date, ed.name
