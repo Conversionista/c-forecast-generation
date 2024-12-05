@@ -53,6 +53,6 @@ FROM (
 ) AS combined_data
 WHERE EXISTS (
     SELECT 1
-    FROM ${ref("stg_people_combined")} AS active_users
-    WHERE active_users.forecast_person_id = combined_data.person_id
+    FROM ${ref("stg_people_combined")} AS employees
+    WHERE employees.forecast_person_id = combined_data.person_id
 )
