@@ -13,6 +13,7 @@ SELECT
   , name
   , employee_id
   , location
+  , company
   , specialty
   , seniority
   , ROUND(SUM(public_holiday_hours), 1) AS public_holiday_hours
@@ -38,6 +39,7 @@ GROUP BY
   , name
   , employee_id
   , location
+  , company
   , specialty
   , seniority
 

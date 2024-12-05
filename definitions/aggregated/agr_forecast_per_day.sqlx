@@ -5,32 +5,7 @@ config {
     tags: ['Sweden', 'Norway']
 }
 
-WITH employees_to_exclude AS (
-  SELECT *
-  FROM ${ref("employees_to_exclude_from_forecast")}
-),
-
-workdays AS (
-  SELECT
-    date,
-    IF(ph.name IS NOT NULL, TRUE, FALSE) AS public_holiday
-  FROM
-    UNNEST(
-      GENERATE_DATE_ARRAY(
-        (SELECT MIN(date) FROM ${ref("stg_forecast_daily")}),
-        DATE_ADD(CURRENT_DATE(), INTERVAL 6 MONTH),
-        INTERVAL 1 DAY
-      )
-    ) AS date
-  LEFT JOIN
-    ${ref("public_holidays")} AS ph
-  ON
-    date = ph.date
-  WHERE
-    EXTRACT(DAYOFWEEK FROM date) BETWEEN 2 AND 6
-),
-
-forecast_agg AS (
+WITH forecast_agg AS (
   SELECT
     date,
     employee_id,
@@ -41,7 +16,7 @@ forecast_agg AS (
   FROM
     ${ref("stg_forecast_daily")} 
   WHERE
-    employee_id NOT IN (SELECT id FROM employees_to_exclude)
+    employee_id NOT IN (SELECT employee_id FROM ${ref("employees_to_exclude_from_forecast")})
   GROUP BY
     1, 2
 ),
@@ -50,17 +25,18 @@ canvas AS (
   SELECT
     e.name,
     e.location,
+    e.company,
     e.employee_id,
     e.specialty,
     e.seniority,
-    w.date,
-    IF(w.public_holiday, 8, NULL) AS public_holiday_hours
+    f.date,
+    IF(f.is_public_holiday, 8, NULL) AS public_holiday_hours
   FROM
     ${ref("stg_people_combined")} e
   CROSS JOIN
-    workdays w
+    ${ref("stg_forecast_daily")} f
   WHERE
-    e.employee_id NOT IN (SELECT id FROM employees_to_exclude)
+    e.employee_id NOT IN (SELECT employee_id FROM ${ref("employees_to_exclude_from_forecast")})
 )
 
 SELECT
@@ -68,6 +44,7 @@ SELECT
   c.name,
   c.employee_id,
   c.location,
+  c.company,
   c.specialty,
   c.seniority,
   ROUND(COALESCE(c.public_holiday_hours, 0), 0) AS public_holiday_hours,
