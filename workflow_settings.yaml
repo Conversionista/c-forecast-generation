@@ -6,18 +6,3 @@ dataformCoreVersion: 3.0.0
 
 vars:
   yearly_holidays: '["01-01","01-06","05-01","06-01","12-24","12-25","12-26","12-31"]'
-  specific_holidays: '["2022-04-15","2022-04-18","2022-05-26","2022-06-24","2023-04-07","2023-04-10","2023-05-18","2023-06-23"]'
-  employees_to_exclude: '[
-    {"id": "10823", "name": "Sophia Axelsson"},
-    {"id": "10506", "name": "Alex Arquati"},
-    {"id": "10338", "name": "Linnea Hjerpe"},
-    {"id": "10014", "name": "Erik Öhlen"},
-    {"id": "11830", "name": "Linnea Ravegård"},
-    {"id": "11033", "name": "Paulina L"},
-    {"id": "10022", "name": "Niclas"},
-    {"id": "10058", "name": "Ross Carrington"},
-    {"id": "11589", "name": "Micke"},
-    {"id": "11978", "name": "Siwen"},
-    {"id": "10023", "name": "Maria"},
-    {"id": "12116", "name": "Laura"}
-  ]'

@@ -7,15 +7,12 @@ config {
 
 js {
     const yearly_holidays = dataform.projectConfig.vars.yearly_holidays;
-    const specific_holidays = dataform.projectConfig.vars.specific_holidays;
 }
 
 WITH yearly_holidays AS (
   SELECT holiday FROM UNNEST(${yearly_holidays}) AS holiday
 ),
-specific_holidays AS (
-  SELECT CAST(holiday AS DATE) AS holiday FROM UNNEST(${specific_holidays}) AS holiday
-),
+
 dates AS (
   SELECT *
   FROM (

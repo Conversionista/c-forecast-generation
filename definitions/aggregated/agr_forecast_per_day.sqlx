@@ -5,19 +5,9 @@ config {
     tags: ['Sweden', 'Norway']
 }
 
-js {
-    function unpackEmployees(employeesJson) {
-        const employees = JSON.parse(employeesJson);
-        return employees.map(emp => `'${JSON.stringify(emp)}'`).join(',');
-    }
-    const employeesToExclude = unpackEmployees(dataform.projectConfig.vars.employees_to_exclude);
-}
-
 WITH employees_to_exclude AS (
-  SELECT 
-    JSON_VALUE(employee, '$.id') AS id,
-    JSON_VALUE(employee, '$.name') AS name
-  FROM UNNEST([${employeesToExclude}]) AS employee
+  SELECT *
+  FROM ${ref("employees_to_exclude_from_forecast")}
 ),
 
 workdays AS (
