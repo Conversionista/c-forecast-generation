@@ -1,45 +1,47 @@
 config {
-    type: "view",
+    type: "table",
     schema: "c_forecast_dev",
     name: "int_forecast_per_day",
     tags: ['Sweden', 'Norway']
 }
 
-WITH date_range AS (
-  SELECT DISTINCT date
-  FROM ${ref("stg_forecast_daily")}
-  WHERE date >= DATE_ADD(CURRENT_DATE(), INTERVAL 1 WEEK)
+WITH workdays AS (
+  SELECT DISTINCT
+    date,
+    is_public_holiday
+  FROM
+    ${ref("stg_forecast_daily")}
+  WHERE EXTRACT(DAYOFWEEK FROM date) BETWEEN 2 AND 6
 ),
 
-employee_dates AS (
-  SELECT 
-    e.employee_id,
-    e.name,
-    e.location,
-    e.company,
-    e.specialty,
-    e.seniority,
-    e.date_of_hiring,
-    e.date_of_termination,
-    d.date
-  FROM ${ref("stg_people_combined")} e
-  CROSS JOIN date_range d
-  WHERE e.employee_id NOT IN (SELECT employee_id FROM ${ref("employees_to_exclude_from_forecast")})
-    AND d.date >= e.date_of_hiring
-    AND (e.date_of_termination IS NULL OR d.date <= e.date_of_termination)
+employees AS (
+  SELECT
+    name,
+    employee_id,
+    location,
+    specialty,
+    seniority,
+    company,
+    date_of_hiring,
+    date_of_termination
+  FROM
+    ${ref("stg_people_combined")}
+  WHERE
+    employee_id NOT IN (SELECT employee_id FROM ${ref("employees_to_exclude_from_forecast")})
+    AND (date_of_termination IS NULL OR date_of_termination > CURRENT_DATE())
+    AND date_of_hiring <= CURRENT_DATE()
 ),
 
 forecast_agg AS (
   SELECT
     date,
     employee_id,
-    ROUND(SUM(IF(color = 'blue', hours_per_day, 0)), 1) AS client_hours,
-    ROUND(SUM(IF(color = 'orange', hours_per_day, 0)), 1) AS internal_hours,
-    ROUND(SUM(IF(color = 'black', hours_per_day, 0)), 1) AS timeoff_hours,
-    ROUND(SUM(IF(color NOT IN ('black', 'orange', 'blue'), hours_per_day, 0)), 1) AS other_hours,
-    MAX(is_public_holiday) AS is_public_holiday
+    ROUND(SUM(CASE WHEN color = 'blue' THEN hours_per_day ELSE 0 END), 1) AS client_hours,
+    ROUND(SUM(CASE WHEN color = 'orange' THEN hours_per_day ELSE 0 END), 1) AS internal_hours,
+    ROUND(SUM(CASE WHEN color = 'black' THEN hours_per_day ELSE 0 END), 1) AS timeoff_hours,
+    ROUND(SUM(CASE WHEN color NOT IN ('black', 'orange', 'blue') THEN hours_per_day ELSE 0 END), 1) AS other_hours
   FROM
-    ${ref("stg_forecast_daily")} 
+    ${ref("stg_forecast_daily")}
   WHERE
     employee_id NOT IN (SELECT employee_id FROM ${ref("employees_to_exclude_from_forecast")})
   GROUP BY
@@ -47,27 +49,28 @@ forecast_agg AS (
 )
 
 SELECT
-  ed.date,
-  ed.name,
-  ed.employee_id,
-  ed.location,
-  ed.company,
-  ed.specialty,
-  ed.seniority,
-  ed.date_of_hiring,
-  ed.date_of_termination,
-  ROUND(IF(COALESCE(fa.is_public_holiday, FALSE), 8, 0), 0) AS public_holiday_hours,
-  COALESCE(fa.timeoff_hours, 0) AS timeoff_hours,
-  COALESCE(fa.client_hours, 0) AS client_hours,
-  COALESCE(fa.internal_hours, 0) AS internal_hours,
-  COALESCE(fa.other_hours, 0) AS other_hours,
-  (8 - IF(COALESCE(fa.is_public_holiday, FALSE), 8, COALESCE(fa.timeoff_hours, 0))) AS available_hours,
-  ROUND((8 - IF(COALESCE(fa.is_public_holiday, FALSE), 8, COALESCE(fa.timeoff_hours, 0)) - COALESCE(fa.client_hours, 0)), 2) AS capacity_hours
+  w.date,
+  e.name,
+  e.employee_id,
+  e.location,
+  e.company,
+  e.specialty,
+  e.seniority,
+  CASE WHEN w.is_public_holiday THEN 8 ELSE 0 END AS public_holiday_hours,
+  CASE WHEN w.is_public_holiday THEN 0 ELSE COALESCE(f.timeoff_hours, 0) END AS timeoff_hours,
+  CASE WHEN w.is_public_holiday THEN 0 ELSE COALESCE(f.client_hours, 0) END AS client_hours,
+  CASE WHEN w.is_public_holiday THEN 0 ELSE COALESCE(f.internal_hours, 0) END AS internal_hours,
+  CASE WHEN w.is_public_holiday THEN 0 ELSE COALESCE(f.other_hours, 0) END AS other_hours,
+  CASE WHEN w.is_public_holiday THEN 0 ELSE 8 - COALESCE(f.timeoff_hours, 0) END AS available_hours,
+  CASE WHEN w.is_public_holiday THEN 0 ELSE 8 - COALESCE(f.timeoff_hours, 0) - COALESCE(f.client_hours, 0) END AS capacity_hours
 FROM
-  employee_dates ed
+  workdays w
+CROSS JOIN
+  employees e
 LEFT JOIN
-  forecast_agg fa
-ON
-  ed.employee_id = fa.employee_id AND ed.date = fa.date
+  forecast_agg f ON w.date = f.date AND e.employee_id = f.employee_id
+WHERE
+  w.date >= e.date_of_hiring
+  AND (e.date_of_termination IS NULL OR w.date <= e.date_of_termination)
 ORDER BY
-  ed.date, ed.name
+  w.date, e.name

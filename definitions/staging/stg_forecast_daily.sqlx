@@ -5,28 +5,19 @@ config {
     tags: ['Sweden', 'Norway']
 }
 
-js {
-    const yearly_holidays = dataform.projectConfig.vars.yearly_holidays;
-}
-
-WITH yearly_holidays AS (
-  SELECT holiday FROM UNNEST(${yearly_holidays}) AS holiday
-),
-
-dates AS (
-  SELECT *
-  FROM (
-    SELECT DISTINCT date,
+WITH dates AS (
+  SELECT 
+    date,
     CAST(FORMAT_DATE("%u", CAST(date AS DATE)) AS INT64) AS day_of_week,
-    "1" AS merge_id 
-    FROM `bigquery-public-data.utility_eu.date_greg`
-    WHERE date BETWEEN '2020-09-01' AND DATE_ADD(CURRENT_DATE(), INTERVAL 180 DAY)
-    ORDER BY DATE ASC
-  )
-  WHERE day_of_week < 6 
-    AND SUBSTR(CAST(date AS STRING), 6, 5) NOT IN (SELECT holiday FROM yearly_holidays)
-    AND date NOT IN (SELECT date FROM ${ref("public_holidays")}
-                     WHERE is_weekend = True)
+    "1" AS merge_id,
+    CASE
+      WHEN date IN (SELECT date FROM ${ref("public_holidays")}) THEN TRUE
+      ELSE FALSE
+    END AS is_public_holiday
+  FROM `bigquery-public-data.utility_eu.date_greg`
+  WHERE date BETWEEN '2020-09-01' AND DATE_ADD(CURRENT_DATE(), INTERVAL 180 DAY)
+    AND CAST(FORMAT_DATE("%u", CAST(date AS DATE)) AS INT64) < 6 -- Only weekdays
+  ORDER BY DATE ASC
 ), 
 harvest_forecast AS (
   SELECT 
@@ -44,10 +35,7 @@ harvest_forecast AS (
 
 SELECT 
   t1.date, 
-  CASE
-    WHEN t1.date IN (SELECT date FROM ${ref("public_holidays")}) THEN TRUE
-    ELSE FALSE
-  END AS is_public_holiday,
+  t1.is_public_holiday,
   t2.* EXCEPT(merge_id, working_days_monday, working_days_tuesday, working_days_wednesday, working_days_thursday, working_days_friday, rn, hours_per_day),
   CASE
     WHEN t2.project_name = "Time Off" THEN t2.hours_per_day

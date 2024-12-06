@@ -1,5 +1,5 @@
 config {
-    type: "view",
+    type: "table",
     schema: "c_forecast_dev",
     name: "int_forecast_per_month",
     tags: ['Sweden', 'Norway']
