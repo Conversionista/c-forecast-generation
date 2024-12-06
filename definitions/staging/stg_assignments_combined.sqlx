@@ -1,8 +1,12 @@
 config {
-    type: "table",
+    type: "incremental",
     schema: "c_forecast_dev",
     name: "stg_assignments_combined_filtered",
-    tags: ['Sweden', 'Norway']
+    tags: ['Sweden', 'Norway'],
+    uniqueKey: ['id'],
+    bigquery: {
+        partitionBy: "DATE(updated_at)"
+    }
 }
 
 SELECT 
@@ -55,4 +59,10 @@ WHERE EXISTS (
     SELECT 1
     FROM ${ref("stg_people_combined")} AS employees
     WHERE employees.forecast_person_id = combined_data.person_id
+)
+${when(incremental(), `AND (
+    combined_data.updated_at > (SELECT MAX(updated_at) FROM ${self()})
+    OR combined_data.updated_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 DAY)
+    OR combined_data.id NOT IN (SELECT id FROM ${self()})
+)`)}
 )
