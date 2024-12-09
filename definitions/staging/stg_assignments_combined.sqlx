@@ -5,7 +5,7 @@ config {
     tags: ['Sweden', 'Norway'],
     uniqueKey: ['id'],
     bigquery: {
-        partitionBy: "DATE(updated_at)"
+        partitionBy: "DATE(CAST(updated_at AS TIMESTAMP))"
     }
 }
 
@@ -15,7 +15,7 @@ SELECT
     combined_data.end_date,
     combined_data.allocation,
     combined_data.notes,
-    combined_data.updated_at,
+    CAST(combined_data.updated_at AS STRING) AS updated_at,
     combined_data.updated_by_id,
     combined_data.project_id,
     combined_data.person_id,
@@ -29,7 +29,7 @@ FROM (
         end_date,
         allocation,
         notes,
-        updated_at,
+        CAST(updated_at AS STRING) AS updated_at,
         updated_by_id,
         project_id,
         person_id,
@@ -46,7 +46,7 @@ FROM (
         end_date,
         allocation,
         notes,
-        updated_at,
+        CAST(updated_at AS STRING) AS updated_at,
         updated_by_id,
         project_id,
         person_id,
@@ -61,8 +61,7 @@ WHERE EXISTS (
     WHERE employees.forecast_person_id = combined_data.person_id
 )
 ${when(incremental(), `AND (
-    combined_data.updated_at > (SELECT MAX(updated_at) FROM ${self()})
-    OR combined_data.updated_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 DAY)
+    CAST(combined_data.updated_at AS TIMESTAMP) > (SELECT CAST(MAX(updated_at) AS TIMESTAMP) FROM ${self()})
+    OR CAST(combined_data.updated_at AS TIMESTAMP) >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 DAY)
     OR combined_data.id NOT IN (SELECT id FROM ${self()})
 )`)}
-)
