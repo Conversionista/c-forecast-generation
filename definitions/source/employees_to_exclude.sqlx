@@ -1,0 +1,6 @@
+config {
+  type: "declaration",
+  database: "conversionista-se",
+  schema: "sold_and_forecast",
+  name: "employees_to_exclude_from_forecast"
+}

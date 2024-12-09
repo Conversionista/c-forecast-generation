@@ -1,0 +1,46 @@
+config {
+    type: "incremental",
+    schema: "c_forecast_dev",
+    name: "stg_projects_combined_filtered",
+    tags: ['Sweden', 'Norway'],
+    uniqueKey: ['id'],
+    bigquery: {
+        partitionBy: "DATE(updated_at)"
+    }
+}
+
+WITH combined_projects AS (
+    SELECT 
+        *,
+        CAST(updated_at AS STRING) AS updated_at_string
+    FROM ${ref("forecast_se_projects")}
+
+    UNION ALL
+
+    SELECT 
+        *,
+        CAST(updated_at AS STRING) AS updated_at_string
+    FROM ${ref("forecast_no_projects")}
+)
+
+SELECT 
+    p.* EXCEPT(updated_at_string),
+    p.updated_at_string AS updated_at
+FROM combined_projects AS p
+WHERE (
+    EXISTS (
+        SELECT 1
+        FROM ${ref("forecast_se_assignments")} AS se_a
+        WHERE se_a.project_id = p.id
+    )
+    OR EXISTS (
+        SELECT 1
+        FROM ${ref("forecast_no_assignments")} AS no_a
+        WHERE no_a.project_id = p.id
+    )
+)
+${when(incremental(), `AND (
+    CAST(p.updated_at_string AS TIMESTAMP) >= (SELECT CAST(MAX(updated_at) AS TIMESTAMP) FROM ${self()})
+    OR p.id NOT IN (SELECT id FROM ${self()})
+    OR p.date > (SELECT MAX(date) FROM ${self()}) 
+)`)}

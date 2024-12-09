@@ -1,0 +1,50 @@
+config {
+    type: "table",
+    schema: "c_forecast_dev",
+    name: "int_forecast_per_week",
+    tags: ['Sweden', 'Norway']
+}
+
+SELECT
+  DATE_TRUNC(date, ISOWEEK) AS date,
+  IF(EXTRACT(ISOWEEK FROM date) = 1 AND EXTRACT(MONTH FROM date) = 12, EXTRACT(YEAR FROM date) + 1, EXTRACT(YEAR FROM date)) AS year,
+  EXTRACT(ISOWEEK FROM date) AS week,
+  CONCAT(
+    IF(EXTRACT(ISOWEEK FROM date) = 1 AND EXTRACT(MONTH FROM date) = 12, EXTRACT(YEAR FROM date) + 1, EXTRACT(YEAR FROM date)),
+    ".",
+    FORMAT("%02d", EXTRACT(ISOWEEK FROM date))
+  ) AS year_week,
+  name,
+  employee_id,
+  location,
+  company, 
+  specialty,
+  seniority,
+  ROUND(SUM(public_holiday_hours), 1) AS public_holiday_hours,
+  ROUND(SUM(timeoff_hours), 1) AS timeoff_hours,
+  ROUND(SUM(client_hours), 1) AS client_hours,
+  ROUND(SUM(internal_hours), 1) AS internal_hours,
+  ROUND(SUM(other_hours), 1) AS other_hours,
+  ROUND(SUM(available_hours), 1) AS available_hours,
+  ROUND(SUM(capacity_hours), 1) AS capacity_hours
+FROM
+  ${ref("int_forecast_per_day")}
+WHERE
+  date BETWEEN DATE_TRUNC(CURRENT_DATE(), ISOWEEK) 
+  AND DATE_ADD(LAST_DAY(DATE_ADD(CURRENT_DATE(), INTERVAL 180 DAY), ISOWEEK), INTERVAL -1 WEEK)
+GROUP BY
+  date,
+  year,
+  week,
+  year_week,
+  name,
+  employee_id,
+  location,
+  specialty,
+  seniority,
+  company
+ORDER BY
+  year,
+  week,
+  specialty,
+  name

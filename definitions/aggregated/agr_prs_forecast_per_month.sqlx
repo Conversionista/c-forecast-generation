@@ -1,0 +1,46 @@
+config {
+    type: "table",
+    schema: "c_forecast_dev",
+    name: "int_forecast_per_month",
+    tags: ['Sweden', 'Norway']
+}
+
+SELECT
+  DATE_TRUNC(date, MONTH) AS date
+  , EXTRACT(YEAR FROM date) AS year
+  , EXTRACT(MONTH FROM date) AS month
+  , CONCAT(EXTRACT(YEAR FROM date), ".", EXTRACT(MONTH FROM date)) AS year_month
+  , name
+  , employee_id
+  , location
+  , company
+  , specialty
+  , seniority
+  , ROUND(SUM(public_holiday_hours), 1) AS public_holiday_hours
+  ,ROUND(SUM(timeoff_hours), 1) AS timeoff_hours
+  ,ROUND(SUM(client_hours), 1) AS client_hours
+  ,ROUND(SUM(internal_hours), 1) AS internal_hours
+  ,ROUND(SUM(other_hours), 1) AS other_hours
+  ,ROUND(SUM(available_hours), 1) AS available_hours
+  ,ROUND(SUM(capacity_hours), 1) AS capacity_hours
+
+FROM
+  ${ref("int_forecast_per_day")}
+
+
+WHERE TRUE
+  AND date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR)
+
+GROUP BY
+  date
+  , year
+  , month
+  , year_month
+  , name
+  , employee_id
+  , location
+  , company
+  , specialty
+  , seniority
+
+
