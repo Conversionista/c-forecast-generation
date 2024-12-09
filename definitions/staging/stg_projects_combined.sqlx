@@ -40,7 +40,6 @@ WHERE (
     )
 )
 ${when(incremental(), `AND (
-    CAST(p.updated_at_string AS TIMESTAMP) > (SELECT CAST(MAX(updated_at) AS TIMESTAMP) FROM ${self()})
-    OR CAST(p.updated_at_string AS TIMESTAMP) >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 DAY)
+    CAST(p.updated_at_string AS TIMESTAMP) >= (SELECT CAST(MAX(updated_at) AS TIMESTAMP) FROM ${self()})
     OR p.id NOT IN (SELECT id FROM ${self()})
 )`)}

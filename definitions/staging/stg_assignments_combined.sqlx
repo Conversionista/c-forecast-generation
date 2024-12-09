@@ -61,7 +61,6 @@ WHERE EXISTS (
     WHERE employees.forecast_person_id = combined_data.person_id
 )
 ${when(incremental(), `AND (
-    CAST(combined_data.updated_at AS TIMESTAMP) > (SELECT CAST(MAX(updated_at) AS TIMESTAMP) FROM ${self()})
-    OR CAST(combined_data.updated_at AS TIMESTAMP) >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 DAY)
+    CAST(combined_data.updated_at AS TIMESTAMP) >= (SELECT CAST(MAX(updated_at) AS TIMESTAMP) FROM ${self()})
     OR combined_data.id NOT IN (SELECT id FROM ${self()})
 )`)}
