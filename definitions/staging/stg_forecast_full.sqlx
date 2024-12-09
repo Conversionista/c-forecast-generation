@@ -3,7 +3,7 @@ config {
     schema: "c_forecast_dev",
     name: "stg_harvest_forecast",
     tags: ['Sweden', 'Norway'],
-    uniqueKey: ['task_id'],
+    uniqueKey: ['task_id', 'name'],
     bigquery: {
         partitionBy: "DATE(updated_at)"
     }
@@ -76,5 +76,6 @@ LEFT JOIN ProjectDetails AS p
   ON a.project_id = p.id
 ${when(incremental(), `WHERE (
     CAST(a.updated_at AS TIMESTAMP) >= (SELECT CAST(MAX(updated_at) AS TIMESTAMP) FROM ${self()})
+    OR a.date > (SELECT MAX(date) FROM ${self()}) 
     OR a.id NOT IN (SELECT task_id FROM ${self()})
 )`)}

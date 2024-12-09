@@ -42,4 +42,5 @@ WHERE (
 ${when(incremental(), `AND (
     CAST(p.updated_at_string AS TIMESTAMP) >= (SELECT CAST(MAX(updated_at) AS TIMESTAMP) FROM ${self()})
     OR p.id NOT IN (SELECT id FROM ${self()})
+    OR p.date > (SELECT MAX(date) FROM ${self()}) 
 )`)}
